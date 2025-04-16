@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { collection, getDocs, query, orderBy, where } from "firebase/firestore";
 import { db } from "../firebase/config";
@@ -11,7 +10,9 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Search, Loader2, MapPin, LayoutGrid } from "lucide-react";
+import { Search, Loader2, MapPin, LayoutGrid, Plus } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import AIChatbot from "@/components/AIChatbot";
 
 const Home = () => {
   const { user } = useAuth();
@@ -23,6 +24,8 @@ const Home = () => {
   const [viewMode, setViewMode] = useState<"grid" | "map">("grid");
 
   const categories: AlertCategory[] = ["fire", "crime", "accident", "weather", "other"];
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchAlerts();
@@ -80,7 +83,6 @@ const Home = () => {
   const handleAlertClick = (alertId: string) => {
     const alert = alerts.find((a) => a.id === alertId);
     if (alert) {
-      // In a real app, you might navigate to a detail page or show a modal
       toast({
         title: alert.title,
         description: alert.description,
@@ -90,11 +92,23 @@ const Home = () => {
 
   return (
     <div className="container mx-auto py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-4">Community Alerts</h1>
-        <p className="text-muted-foreground">
-          Stay informed about what's happening around you. View recent alerts posted by members of your community.
-        </p>
+      <div className="mb-8 flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold mb-4">Community Alerts</h1>
+          <p className="text-muted-foreground">
+            Stay informed about what's happening around you. View recent alerts
+            posted by members of your community.
+          </p>
+        </div>
+        {user && (
+          <Button
+            onClick={() => navigate("/create-alert")}
+            className="flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Create Alert
+          </Button>
+        )}
       </div>
 
       <div className="flex flex-col space-y-4 mb-6">
@@ -187,6 +201,8 @@ const Home = () => {
           )}
         </TabsContent>
       </Tabs>
+
+      <AIChatbot />
     </div>
   );
 };
