@@ -2,7 +2,7 @@
 import React from "react";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { AlertCircle, Clock, MapPin, User, Flame, ShieldAlert, Car, Cloud, HelpCircle } from "lucide-react";
-import { formatDistanceToDate, formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow } from "date-fns";
 
 export type AlertCategory = "fire" | "crime" | "accident" | "weather" | "other";
 
