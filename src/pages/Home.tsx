@@ -1,8 +1,8 @@
+
 import React, { useState, useEffect } from "react";
-import { collection, getDocs, query, orderBy, where } from "firebase/firestore";
+import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { db } from "../firebase/config";
-import { useAuth } from "@/context/AuthContext";
-import { Alert, AlertCategory } from "@/components/AlertCard";
+import { Alert } from "@/components/Map";
 import AlertCard from "@/components/AlertCard";
 import Map from "@/components/Map";
 import { Button } from "@/components/ui/button";
@@ -10,12 +10,12 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Search, Loader2, MapPin, LayoutGrid, Plus } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Search, Loader2, MapPin, LayoutGrid } from "lucide-react";
 import AIChatbot from "@/components/AIChatbot";
 
+type AlertCategory = "fire" | "crime" | "accident" | "weather" | "other";
+
 const Home = () => {
-  const { user } = useAuth();
   const { toast } = useToast();
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(true);
@@ -24,8 +24,6 @@ const Home = () => {
   const [viewMode, setViewMode] = useState<"grid" | "map">("grid");
 
   const categories: AlertCategory[] = ["fire", "crime", "accident", "weather", "other"];
-
-  const navigate = useNavigate();
 
   useEffect(() => {
     fetchAlerts();
@@ -41,10 +39,19 @@ const Home = () => {
       );
       
       const querySnapshot = await getDocs(alertsQuery);
-      const alertsList = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as Alert[];
+      const alertsList = querySnapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          title: data.title,
+          category: data.category,
+          location: data.location,
+          description: data.description,
+          imageUrl: data.imageUrl,
+          createdAt: data.createdAt,
+          createdBy: data.createdBy
+        };
+      }) as any[];
       
       setAlerts(alertsList);
     } catch (error: any) {
@@ -70,12 +77,12 @@ const Home = () => {
     const matchesSearch = 
       searchTerm === "" ||
       alert.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      alert.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (alert.description && alert.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
       alert.location.address.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesCategory = 
       selectedCategories.length === 0 || 
-      selectedCategories.includes(alert.category);
+      selectedCategories.includes(alert.category as AlertCategory);
     
     return matchesSearch && matchesCategory;
   });
@@ -85,30 +92,19 @@ const Home = () => {
     if (alert) {
       toast({
         title: alert.title,
-        description: alert.description,
+        description: alert.description || "No description provided",
       });
     }
   };
 
   return (
     <div className="container mx-auto py-8">
-      <div className="mb-8 flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold mb-4">Community Alerts</h1>
-          <p className="text-muted-foreground">
-            Stay informed about what's happening around you. View recent alerts
-            posted by members of your community.
-          </p>
-        </div>
-        {user && (
-          <Button
-            onClick={() => navigate("/create-alert")}
-            className="flex items-center gap-2"
-          >
-            <Plus className="h-4 w-4" />
-            Create Alert
-          </Button>
-        )}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-4">Community Alerts</h1>
+        <p className="text-muted-foreground">
+          Stay informed about what's happening around you. View recent alerts
+          posted by members of your community.
+        </p>
       </div>
 
       <div className="flex flex-col space-y-4 mb-6">
@@ -171,7 +167,7 @@ const Home = () => {
             </div>
           ) : filteredAlerts.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredAlerts.map((alert) => (
+              {filteredAlerts.map((alert: any) => (
                 <AlertCard 
                   key={alert.id} 
                   alert={alert} 

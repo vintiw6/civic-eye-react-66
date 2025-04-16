@@ -1,16 +1,13 @@
 
-import React from "react";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import React, { useEffect, useRef } from "react";
+import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { Alert } from "./AlertCard";
-import { divIcon } from "leaflet";
-import { renderToString } from "react-dom/server";
 import { AlertCircle } from "lucide-react";
+import { renderToString } from "react-dom/server";
 
 // Fix for Leaflet marker icons
 import icon from "leaflet/dist/images/marker-icon.png";
 import iconShadow from "leaflet/dist/images/marker-shadow.png";
-import L from "leaflet";
 
 // Fix default Leaflet icon
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -18,6 +15,18 @@ L.Icon.Default.mergeOptions({
   iconUrl: icon,
   shadowUrl: iconShadow,
 });
+
+// Alert interface
+export interface Alert {
+  id: string;
+  title: string;
+  category: "fire" | "crime" | "accident" | "weather" | "other";
+  location: {
+    lat: number;
+    lng: number;
+    address: string;
+  };
+}
 
 interface MapProps {
   alerts: Alert[];
@@ -47,51 +56,75 @@ const Map: React.FC<MapProps> = ({
   zoom = 4,
   onMarkerClick,
 }) => {
-  const createCustomIcon = (category: string) => {
-    const html = renderToString(
-      <div className={`marker-icon ${getCategoryColor(category)}`}>
-        <AlertCircle className="h-8 w-8" />
-      </div>
-    );
+  const mapRef = useRef<HTMLDivElement>(null);
+  const mapInstance = useRef<L.Map | null>(null);
 
-    return divIcon({
-      html,
-      className: "custom-marker-icon",
-      iconSize: [32, 32],
-      iconAnchor: [16, 16],
+  useEffect(() => {
+    if (!mapRef.current) return;
+
+    // Initialize map if it doesn't exist
+    if (!mapInstance.current) {
+      mapInstance.current = L.map(mapRef.current).setView(center, zoom);
+      
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      }).addTo(mapInstance.current);
+    } else {
+      // If map already exists, just update view
+      mapInstance.current.setView(center, zoom);
+    }
+
+    // Create custom icon function
+    const createCustomIcon = (category: string) => {
+      const html = renderToString(
+        <div className={`marker-icon ${getCategoryColor(category)}`}>
+          <AlertCircle className="h-8 w-8" />
+        </div>
+      );
+
+      return L.divIcon({
+        html,
+        className: "custom-marker-icon",
+        iconSize: [32, 32],
+        iconAnchor: [16, 16],
+      });
+    };
+
+    // Add markers for all alerts
+    const markers: L.Marker[] = [];
+    
+    alerts.forEach(alert => {
+      const marker = L.marker(
+        [alert.location.lat, alert.location.lng],
+        { icon: createCustomIcon(alert.category) }
+      ).addTo(mapInstance.current!);
+      
+      marker.bindPopup(`
+        <div class="text-sm">
+          <h3 class="font-bold">${alert.title}</h3>
+          <p class="text-xs mt-1">${alert.location.address}</p>
+        </div>
+      `);
+      
+      if (onMarkerClick) {
+        marker.on('click', () => onMarkerClick(alert.id));
+      }
+      
+      markers.push(marker);
     });
-  };
+
+    // Cleanup function
+    return () => {
+      // Remove all markers when component unmounts or updates
+      markers.forEach(marker => {
+        marker.remove();
+      });
+    };
+  }, [alerts, center, zoom, onMarkerClick]);
 
   return (
     <div className="map-container">
-      <MapContainer
-        center={center}
-        zoom={zoom}
-        scrollWheelZoom={true}
-        className="h-full z-0"
-      >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        {alerts.map((alert) => (
-          <Marker
-            key={alert.id}
-            position={[alert.location.lat, alert.location.lng]}
-            icon={createCustomIcon(alert.category)}
-            eventHandlers={{
-              click: () => onMarkerClick && onMarkerClick(alert.id),
-            }}
-          >
-            <Popup>
-              <div className="text-sm">
-                <h3 className="font-bold">{alert.title}</h3>
-                <p className="text-xs mt-1">{alert.location.address}</p>
-              </div>
-            </Popup>
-          </Marker>
-        ))}
-      </MapContainer>
+      <div ref={mapRef} className="h-full z-0"></div>
     </div>
   );
 };
