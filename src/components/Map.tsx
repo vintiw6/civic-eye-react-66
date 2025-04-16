@@ -2,7 +2,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Fire, ShieldAlert, Car, Cloud, HelpCircle } from "lucide-react";
 import { renderToString } from "react-dom/server";
 
 // Fix for Leaflet marker icons
@@ -41,18 +41,33 @@ interface MapProps {
   highlightedAlertId?: string;
 }
 
+const getCategoryIcon = (category: string) => {
+  switch (category) {
+    case "fire":
+      return <Fire className="h-full w-full text-white" />;
+    case "crime":
+      return <ShieldAlert className="h-full w-full text-white" />;
+    case "accident":
+      return <Car className="h-full w-full text-white" />;
+    case "weather":
+      return <Cloud className="h-full w-full text-white" />;
+    default:
+      return <HelpCircle className="h-full w-full text-white" />;
+  }
+};
+
 const getCategoryColor = (category: string) => {
   switch (category) {
     case "fire":
-      return "text-alert-fire";
+      return "bg-alert-fire";
     case "crime":
-      return "text-alert-crime";
+      return "bg-alert-crime";
     case "accident":
-      return "text-alert-accident";
+      return "bg-alert-accident";
     case "weather":
-      return "text-alert-weather";
+      return "bg-alert-weather";
     default:
-      return "text-alert-other";
+      return "bg-alert-other";
   }
 };
 
@@ -159,10 +174,11 @@ const Map: React.FC<MapProps> = ({
 
     // Create custom icon function
     const createCustomIcon = (category: string, isHighlighted: boolean) => {
-      const iconSize = isHighlighted ? 'h-10 w-10' : 'h-8 w-8';
+      const size = isHighlighted ? '40px' : '32px';
       const html = renderToString(
-        <div className={`marker-icon ${getCategoryColor(category)}`}>
-          <AlertCircle className={iconSize} />
+        <div className={`flex items-center justify-center rounded-full ${getCategoryColor(category)}`} 
+             style={{width: size, height: size, boxShadow: '0 2px 5px rgba(0,0,0,0.3)'}}>
+          {getCategoryIcon(category)}
         </div>
       );
 
@@ -189,12 +205,15 @@ const Map: React.FC<MapProps> = ({
         { icon: createCustomIcon(alert.category, isHighlighted) }
       ).addTo(mapInstance.current!);
       
-      marker.bindPopup(`
-        <div class="text-sm">
-          <h3 class="font-bold">${alert.title}</h3>
+      const popupContent = `
+        <div class="p-2">
+          <h3 class="font-bold text-sm">${alert.title}</h3>
           <p class="text-xs mt-1">${alert.location.address}</p>
+          ${alert.description ? `<p class="text-xs mt-1 text-gray-600">${alert.description}</p>` : ''}
         </div>
-      `);
+      `;
+      
+      marker.bindPopup(popupContent);
       
       if (onMarkerClick) {
         marker.on('click', () => onMarkerClick(alert.id));
@@ -220,7 +239,7 @@ const Map: React.FC<MapProps> = ({
   }, [alerts, currentCenter, currentZoom, highlightedAlertId, onMarkerClick]);
 
   return (
-    <div className="map-container h-[500px] rounded-lg overflow-hidden border">
+    <div className="map-container h-[600px] rounded-xl overflow-hidden border shadow-xl">
       <div ref={mapRef} className="h-full z-0"></div>
     </div>
   );

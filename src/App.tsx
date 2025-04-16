@@ -9,20 +9,27 @@ import Home from "@/pages/Home";
 import NotFound from "@/pages/NotFound";
 import CreateAlert from "@/pages/CreateAlert";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
 
 const AppRoutes = () => {
   return (
-    <>
+    <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
-      <main>
+      <main className="flex-1">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/create-alert" element={<CreateAlert />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
-    </>
+    </div>
   );
 };
 
@@ -31,7 +38,7 @@ const App = () => (
     <BrowserRouter>
       <TooltipProvider>
         <Toaster />
-        <Sonner />
+        <Sonner position="top-right" closeButton />
         <AppRoutes />
       </TooltipProvider>
     </BrowserRouter>
