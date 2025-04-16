@@ -65,7 +65,7 @@ const Map: React.FC<MapProps> = ({
   return (
     <div className="map-container">
       <MapContainer
-        center={center as L.LatLngExpression}
+        center={center}
         zoom={zoom}
         scrollWheelZoom={true}
         className="h-full z-0"
@@ -77,8 +77,8 @@ const Map: React.FC<MapProps> = ({
         {alerts.map((alert) => (
           <Marker
             key={alert.id}
-            position={[alert.location.lat, alert.location.lng] as L.LatLngExpression}
-            icon={createCustomIcon(alert.category) as L.Icon}
+            position={[alert.location.lat, alert.location.lng]}
+            icon={createCustomIcon(alert.category)}
             eventHandlers={{
               click: () => onMarkerClick && onMarkerClick(alert.id),
             }}
