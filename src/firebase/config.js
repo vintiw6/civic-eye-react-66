@@ -7,12 +7,13 @@ import { getStorage } from "firebase/storage";
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyAxAAH5RdxFu27E8CsOYyp9cC8pMfIGbOY",
+  authDomain: "citizenalert-497d9.firebaseapp.com",
+  databaseURL: "https://citizenalert-497d9-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "citizenalert-497d9",
+  storageBucket: "citizenalert-497d9.firebasestorage.app",
+  messagingSenderId: "806466831128",
+  appId: "1:806466831128:web:e7c1c73d36aeaab798146d"
 };
 
 // Initialize Firebase
