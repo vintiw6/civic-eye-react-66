@@ -10,8 +10,9 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Search, Loader2, MapPin, LayoutGrid } from "lucide-react";
+import { Search, Loader2, MapPin, LayoutGrid, Plus } from "lucide-react";
 import AIChatbot from "@/components/AIChatbot";
+import { Link } from "react-router-dom";
 
 type AlertCategory = "fire" | "crime" | "accident" | "weather" | "other";
 
@@ -51,7 +52,7 @@ const Home = () => {
           createdAt: data.createdAt,
           createdBy: data.createdBy
         };
-      }) as any[];
+      });
       
       setAlerts(alertsList);
     } catch (error: any) {
@@ -105,6 +106,15 @@ const Home = () => {
           Stay informed about what's happening around you. View recent alerts
           posted by members of your community.
         </p>
+      </div>
+
+      <div className="flex justify-between items-center mb-4">
+        <Link to="/create-alert">
+          <Button className="flex items-center gap-2">
+            <Plus className="h-4 w-4" />
+            Create Alert
+          </Button>
+        </Link>
       </div>
 
       <div className="flex flex-col space-y-4 mb-6">
@@ -167,7 +177,7 @@ const Home = () => {
             </div>
           ) : filteredAlerts.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredAlerts.map((alert: any) => (
+              {filteredAlerts.map((alert) => (
                 <AlertCard 
                   key={alert.id} 
                   alert={alert} 

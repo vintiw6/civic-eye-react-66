@@ -20,12 +20,16 @@ L.Icon.Default.mergeOptions({
 export interface Alert {
   id: string;
   title: string;
+  description?: string;
   category: "fire" | "crime" | "accident" | "weather" | "other";
   location: {
     lat: number;
     lng: number;
     address: string;
   };
+  imageUrl?: string;
+  createdAt?: any;
+  createdBy?: any;
 }
 
 interface MapProps {

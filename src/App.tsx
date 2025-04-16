@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Home from "@/pages/Home";
 import NotFound from "@/pages/NotFound";
+import CreateAlert from "@/pages/CreateAlert";
 
 const queryClient = new QueryClient();
 
@@ -17,6 +18,7 @@ const AppRoutes = () => {
       <main>
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/create-alert" element={<CreateAlert />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>

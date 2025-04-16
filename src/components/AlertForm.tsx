@@ -1,8 +1,6 @@
-
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/context/AuthContext";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from "../firebase/config";
@@ -31,7 +29,6 @@ interface FormData {
 }
 
 const AlertForm: React.FC = () => {
-  const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -70,8 +67,6 @@ const AlertForm: React.FC = () => {
   };
 
   const onSubmit = async (data: FormData) => {
-    if (!user) return;
-    
     try {
       setLoading(true);
       
@@ -85,7 +80,7 @@ const AlertForm: React.FC = () => {
       
       // Upload image if one was selected
       if (image) {
-        const storageRef = ref(storage, `alerts/${user.uid}/${Date.now()}`);
+        const storageRef = ref(storage, `alerts/test/${Date.now()}`);
         await uploadBytes(storageRef, image);
         imageUrl = await getDownloadURL(storageRef);
       }
@@ -102,8 +97,8 @@ const AlertForm: React.FC = () => {
         imageUrl: imageUrl || null,
         createdAt: serverTimestamp(),
         createdBy: {
-          uid: user.uid,
-          email: user.email,
+          uid: 'test-user',
+          email: 'test@example.com',
         },
       };
       
