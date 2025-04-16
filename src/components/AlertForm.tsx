@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
@@ -70,7 +71,8 @@ const AlertForm: React.FC = () => {
     try {
       setLoading(true);
       
-      // Mock coordinates - in a real app, use a geocoding service
+      // Generate random coordinates near the provided address
+      // In a real app, use a geocoding service
       const mockCoordinates = {
         lat: 40.7128 + (Math.random() - 0.5) * 10,
         lng: -74.0060 + (Math.random() - 0.5) * 10,
@@ -102,14 +104,21 @@ const AlertForm: React.FC = () => {
         },
       };
       
-      await addDoc(collection(db, "alerts"), alertData);
+      // Add the document and get the new ID
+      const docRef = await addDoc(collection(db, "alerts"), alertData);
       
       toast({
         title: "Alert posted successfully",
         description: "Your alert has been posted and is now visible to the community.",
       });
       
-      navigate("/");
+      // Navigate to home with new alert ID and location in state
+      navigate("/", { 
+        state: { 
+          newAlertId: docRef.id,
+          alertLocation: mockCoordinates
+        } 
+      });
     } catch (error: any) {
       toast({
         title: "Error posting alert",

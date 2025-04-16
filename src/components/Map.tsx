@@ -1,5 +1,5 @@
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { AlertCircle } from "lucide-react";
@@ -37,6 +37,8 @@ interface MapProps {
   center?: [number, number];
   zoom?: number;
   onMarkerClick?: (alertId: string) => void;
+  searchTerm?: string;
+  highlightedAlertId?: string;
 }
 
 const getCategoryColor = (category: string) => {
@@ -59,48 +61,132 @@ const Map: React.FC<MapProps> = ({
   center = [39.8283, -98.5795], // Center of USA
   zoom = 4,
   onMarkerClick,
+  searchTerm = "",
+  highlightedAlertId,
 }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<L.Map | null>(null);
+  const [currentCenter, setCurrentCenter] = useState<[number, number]>(center);
+  const [currentZoom, setCurrentZoom] = useState<number>(zoom);
+  const markersRef = useRef<{ [key: string]: L.Marker }>({});
 
+  // Effect to update map when center/zoom props change
+  useEffect(() => {
+    if (!mapInstance.current) return;
+    mapInstance.current.setView(center, zoom);
+    setCurrentCenter(center);
+    setCurrentZoom(zoom);
+  }, [center, zoom]);
+
+  // Effect for highlighted alert
+  useEffect(() => {
+    if (!highlightedAlertId || !mapInstance.current) return;
+    
+    const highlightedAlert = alerts.find(alert => alert.id === highlightedAlertId);
+    if (highlightedAlert) {
+      const marker = markersRef.current[highlightedAlertId];
+      
+      // Set view to the highlighted marker and zoom in
+      mapInstance.current.setView(
+        [highlightedAlert.location.lat, highlightedAlert.location.lng], 
+        12
+      );
+      
+      // Open the popup for this marker
+      if (marker) {
+        marker.openPopup();
+      }
+    }
+  }, [highlightedAlertId, alerts]);
+
+  // Effect for search term
+  useEffect(() => {
+    if (!searchTerm || !mapInstance.current) return;
+    
+    const matchingAlerts = alerts.filter(alert => 
+      alert.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (alert.description && alert.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      alert.location.address.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    
+    if (matchingAlerts.length > 0) {
+      // Find bounds that contain all matching alerts
+      if (matchingAlerts.length > 1) {
+        const bounds = L.latLngBounds(
+          matchingAlerts.map(alert => [alert.location.lat, alert.location.lng])
+        );
+        mapInstance.current.fitBounds(bounds, { padding: [50, 50] });
+      } else {
+        // Just one match, center on it
+        const alert = matchingAlerts[0];
+        mapInstance.current.setView(
+          [alert.location.lat, alert.location.lng], 
+          12
+        );
+        
+        // Open the popup for this marker
+        const marker = markersRef.current[alert.id];
+        if (marker) {
+          marker.openPopup();
+        }
+      }
+    }
+  }, [searchTerm, alerts]);
+
+  // Initialize map
   useEffect(() => {
     if (!mapRef.current) return;
 
     // Initialize map if it doesn't exist
     if (!mapInstance.current) {
-      mapInstance.current = L.map(mapRef.current).setView(center, zoom);
+      mapInstance.current = L.map(mapRef.current).setView(currentCenter, currentZoom);
       
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       }).addTo(mapInstance.current);
+      
+      // Listen for map movement to update current position
+      mapInstance.current.on('moveend', () => {
+        if (!mapInstance.current) return;
+        const center = mapInstance.current.getCenter();
+        setCurrentCenter([center.lat, center.lng]);
+        setCurrentZoom(mapInstance.current.getZoom());
+      });
     } else {
       // If map already exists, just update view
-      mapInstance.current.setView(center, zoom);
+      mapInstance.current.setView(currentCenter, currentZoom);
     }
 
     // Create custom icon function
-    const createCustomIcon = (category: string) => {
+    const createCustomIcon = (category: string, isHighlighted: boolean) => {
+      const iconSize = isHighlighted ? 'h-10 w-10' : 'h-8 w-8';
       const html = renderToString(
         <div className={`marker-icon ${getCategoryColor(category)}`}>
-          <AlertCircle className="h-8 w-8" />
+          <AlertCircle className={iconSize} />
         </div>
       );
 
       return L.divIcon({
         html,
         className: "custom-marker-icon",
-        iconSize: [32, 32],
-        iconAnchor: [16, 16],
+        iconSize: isHighlighted ? [40, 40] : [32, 32],
+        iconAnchor: isHighlighted ? [20, 20] : [16, 16],
       });
     };
 
-    // Add markers for all alerts
-    const markers: L.Marker[] = [];
+    // Clear previous markers
+    Object.values(markersRef.current).forEach(marker => {
+      marker.remove();
+    });
+    markersRef.current = {};
     
+    // Add markers for all alerts
     alerts.forEach(alert => {
+      const isHighlighted = alert.id === highlightedAlertId;
+      
       const marker = L.marker(
         [alert.location.lat, alert.location.lng],
-        { icon: createCustomIcon(alert.category) }
+        { icon: createCustomIcon(alert.category, isHighlighted) }
       ).addTo(mapInstance.current!);
       
       marker.bindPopup(`
@@ -114,20 +200,27 @@ const Map: React.FC<MapProps> = ({
         marker.on('click', () => onMarkerClick(alert.id));
       }
       
-      markers.push(marker);
+      // Save reference to marker
+      markersRef.current[alert.id] = marker;
+      
+      // If this is the highlighted marker, open its popup
+      if (isHighlighted) {
+        marker.openPopup();
+      }
     });
 
     // Cleanup function
     return () => {
-      // Remove all markers when component unmounts or updates
-      markers.forEach(marker => {
+      // Clear markers when component unmounts
+      Object.values(markersRef.current).forEach(marker => {
         marker.remove();
       });
+      markersRef.current = {};
     };
-  }, [alerts, center, zoom, onMarkerClick]);
+  }, [alerts, currentCenter, currentZoom, highlightedAlertId, onMarkerClick]);
 
   return (
-    <div className="map-container">
+    <div className="map-container h-[500px] rounded-lg overflow-hidden border">
       <div ref={mapRef} className="h-full z-0"></div>
     </div>
   );

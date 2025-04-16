@@ -12,23 +12,56 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Search, Loader2, MapPin, LayoutGrid, Plus } from "lucide-react";
 import AIChatbot from "@/components/AIChatbot";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 type AlertCategory = "fire" | "crime" | "accident" | "weather" | "other";
 
 const Home = () => {
   const { toast } = useToast();
+  const location = useLocation();
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategories, setSelectedCategories] = useState<AlertCategory[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "map">("grid");
+  const [highlightedAlertId, setHighlightedAlertId] = useState<string | undefined>();
+  const [mapCenter, setMapCenter] = useState<[number, number] | undefined>(undefined);
+  const [mapZoom, setMapZoom] = useState<number | undefined>(undefined);
 
   const categories: AlertCategory[] = ["fire", "crime", "accident", "weather", "other"];
 
   useEffect(() => {
     fetchAlerts();
   }, []);
+
+  // Effect to check for new alert creation
+  useEffect(() => {
+    // Check if we have a newly created alertId in the location state
+    const state = location.state as { newAlertId?: string, alertLocation?: { lat: number, lng: number } } | null;
+    
+    if (state?.newAlertId) {
+      // Set the highlighted alert to the new one
+      setHighlightedAlertId(state.newAlertId);
+      
+      // If we have location coordinates, center the map there
+      if (state.alertLocation) {
+        setMapCenter([state.alertLocation.lat, state.alertLocation.lng]);
+        setMapZoom(13); // Zoom in to see the new alert
+      }
+      
+      // Switch to map view
+      setViewMode("map");
+      
+      // Show a toast
+      toast({
+        title: "Alert Created",
+        description: "Your new alert has been added to the map.",
+      });
+      
+      // Clear the location state to prevent re-highlighting on page refresh
+      window.history.replaceState({}, document.title);
+    }
+  }, [location, toast]);
 
   const fetchAlerts = async () => {
     try {
@@ -91,10 +124,26 @@ const Home = () => {
   const handleAlertClick = (alertId: string) => {
     const alert = alerts.find((a) => a.id === alertId);
     if (alert) {
+      setHighlightedAlertId(alertId);
+      if (viewMode === "grid") {
+        setViewMode("map");
+      }
+
       toast({
         title: alert.title,
         description: alert.description || "No description provided",
       });
+    }
+  };
+
+  // Function to handle search with map sync
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+    
+    // If we have at least 3 characters and we're not in map view, switch to it
+    if (value.length >= 3 && viewMode !== "map") {
+      setViewMode("map");
     }
   };
 
@@ -124,7 +173,7 @@ const Home = () => {
             placeholder="Search alerts by title, description or location..."
             className="pl-10"
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={handleSearch}
           />
         </div>
 
@@ -153,14 +202,14 @@ const Home = () => {
         </div>
       </div>
 
-      <Tabs defaultValue="grid" className="mb-6">
+      <Tabs defaultValue="grid" value={viewMode} onValueChange={(value) => setViewMode(value as "grid" | "map")} className="mb-6">
         <div className="flex justify-between items-center">
           <TabsList>
-            <TabsTrigger value="grid" onClick={() => setViewMode("grid")}>
+            <TabsTrigger value="grid">
               <LayoutGrid className="h-4 w-4 mr-2" />
               Grid View
             </TabsTrigger>
-            <TabsTrigger value="map" onClick={() => setViewMode("map")}>
+            <TabsTrigger value="map">
               <MapPin className="h-4 w-4 mr-2" />
               Map View
             </TabsTrigger>
@@ -180,7 +229,7 @@ const Home = () => {
               {filteredAlerts.map((alert) => (
                 <AlertCard 
                   key={alert.id} 
-                  alert={alert} 
+                  alert={alert as any} 
                   onClick={() => handleAlertClick(alert.id)} 
                 />
               ))}
@@ -202,7 +251,11 @@ const Home = () => {
           ) : (
             <Map 
               alerts={filteredAlerts} 
-              onMarkerClick={handleAlertClick} 
+              onMarkerClick={handleAlertClick}
+              searchTerm={searchTerm}
+              highlightedAlertId={highlightedAlertId}
+              center={mapCenter}
+              zoom={mapZoom}
             />
           )}
         </TabsContent>
