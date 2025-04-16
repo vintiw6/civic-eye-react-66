@@ -1,8 +1,8 @@
 
 import React from "react";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import { AlertCircle, Clock, MapPin, User, Fire, ShieldAlert, Car, Cloud, HelpCircle } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { AlertCircle, Clock, MapPin, User, Flame, ShieldAlert, Car, Cloud, HelpCircle } from "lucide-react";
+import { formatDistanceToDate, formatDistanceToNow } from "date-fns";
 
 export type AlertCategory = "fire" | "crime" | "accident" | "weather" | "other";
 
@@ -49,7 +49,7 @@ const getCategoryColor = (category: AlertCategory) => {
 const getCategoryIcon = (category: AlertCategory) => {
   switch (category) {
     case "fire":
-      return <Fire className="h-4 w-4" />;
+      return <Flame className="h-4 w-4" />;
     case "crime":
       return <ShieldAlert className="h-4 w-4" />;
     case "accident":
@@ -80,7 +80,7 @@ const AlertCard: React.FC<AlertCardProps> = ({ alert, onClick }) => {
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start gap-2">
           <h3 className="font-bold text-lg line-clamp-1">{alert.title}</h3>
-          <span className={`alert-category-badge flex items-center gap-1 ${getCategoryColor(category)}`}>
+          <span className={`alert-category-badge flex items-center gap-1 ${getCategoryColor(alert.category)}`}>
             {getCategoryIcon(alert.category)}
             {alert.category.charAt(0).toUpperCase() + alert.category.slice(1)}
           </span>

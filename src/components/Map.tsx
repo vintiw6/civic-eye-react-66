@@ -2,7 +2,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { AlertCircle, Fire, ShieldAlert, Car, Cloud, HelpCircle } from "lucide-react";
+import { AlertCircle, Flame, ShieldAlert, Car, Cloud, HelpCircle } from "lucide-react";
 import { renderToString } from "react-dom/server";
 
 // Fix for Leaflet marker icons
@@ -44,7 +44,7 @@ interface MapProps {
 const getCategoryIcon = (category: string) => {
   switch (category) {
     case "fire":
-      return <Fire className="h-full w-full text-white" />;
+      return <Flame className="h-full w-full text-white" />;
     case "crime":
       return <ShieldAlert className="h-full w-full text-white" />;
     case "accident":

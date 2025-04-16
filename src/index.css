@@ -61,6 +61,27 @@
   }
 }
 
+/* Alert category colors */
+.bg-alert-fire {
+  @apply bg-red-500;
+}
+
+.bg-alert-crime {
+  @apply bg-purple-600;
+}
+
+.bg-alert-accident {
+  @apply bg-amber-500;
+}
+
+.bg-alert-weather {
+  @apply bg-blue-500;
+}
+
+.bg-alert-other {
+  @apply bg-gray-500;
+}
+
 /* Leaflet styles */
 .leaflet-container {
   height: 100%;
